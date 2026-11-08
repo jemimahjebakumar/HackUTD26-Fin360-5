@@ -15,7 +15,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix mock-financial-api\"",
+    "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix mock-financial-api\" \"npm run dev --prefix backend/spacetimedb\"",
     "install:all": "npm install && npm install --prefix frontend && npm install --prefix mock-financial-api",
     "format": "prettier --write .",
     "setup": "npm run setup --prefix mock-financial-api"
