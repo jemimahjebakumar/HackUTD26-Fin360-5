@@ -1,5 +1,5 @@
 import { pool } from "./pool.js";
-import { CUSTOMERS, TRANSACTION_MONTHS } from "./data.js";
+import { CUSTOMERS, TRANSACTION_MONTHS } from "./mock-data.js";
 
 async function seed() {
   const client = await pool.connect();
