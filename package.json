@@ -17,7 +17,7 @@
   "scripts": {
     "dev": "npm run dev --prefix frontend",
     "install:all": "npm install --prefix frontend && npm install --prefix mock-financial-api",
-    "format": "prettier --write"
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "prettier": "^3.9.10"
