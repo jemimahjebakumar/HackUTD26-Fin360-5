@@ -40,7 +40,9 @@ npm run seed
 > [!NOTE]  
 > **Hold onto the printed user IDs; you need them for authentication in client.**
 
-## How to use (see REFERENCE.md for more precise documentation)
+## How to use
+
+(see `REFERENCE.md` for more precise documentation)
 
 1. **Get available institutions**
    - Call `GET /v1/institutions`.
