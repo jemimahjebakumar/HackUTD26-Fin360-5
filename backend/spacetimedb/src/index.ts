@@ -41,7 +41,7 @@ const DEMO_USERS = [
 // -----------------------------------------------------------------------------
 
 const users = table(
-  { name: "users" },
+  { name: "users", public: true},
   {
     id: t.string().primaryKey(),
     name: t.string(),
@@ -291,7 +291,7 @@ function saveConnectionData(
   for (const providerAccount of payload.accounts) {
     const externalAccountId = requiredString(providerAccount.id, "account.id");
 
-    syncAccount(tx, {
+    syncAccountInternal(tx, {
       connection_id: localConnectionId,
       external_account_id: externalAccountId,
       name: requiredString(providerAccount.name, "account.name"),
@@ -306,7 +306,7 @@ function saveConnectionData(
       throw new Error(`Account '${externalAccountId}' has an invalid transactions field`);
     }
     for (const providerTransaction of providerAccount.transactions) {
-      syncTransaction(tx, {
+      syncTransactionInternal(tx, {
         external_transaction_id: requiredString(providerTransaction.id, "transaction.id"),
         account_id: externalAccountId,
         description: requiredString(providerTransaction.description, "transaction.description"),
@@ -323,7 +323,7 @@ function saveConnectionData(
     for (const providerHolding of providerAccount.holdings) {
       const quantity = numeric(providerHolding.shares, "holding.shares");
       const pricePerShare = numeric(providerHolding.price_per_share, "holding.price_per_share");
-      syncHolding(tx, {
+      syncHoldingInternal(tx, {
         external_holding_id: requiredString(providerHolding.id, "holding.id"),
         account_id: externalAccountId,
         symbol: requiredString(providerHolding.symbol, "holding.symbol"),
@@ -338,7 +338,7 @@ function saveConnectionData(
 
     if (providerAccount.loan) {
       const loan = providerAccount.loan;
-      syncLoan(tx, {
+      syncLoanInternal(tx, {
         account_id: externalAccountId,
         has_loan: true,
         original_principal: numeric(loan.original_principal, "loan.original_principal"),
@@ -355,7 +355,7 @@ function saveConnectionData(
       });
       loanCount += 1;
     } else {
-      syncLoan(tx, {
+      syncLoanInternal(tx, {
         account_id: externalAccountId,
         has_loan: false,
         original_principal: undefined,
@@ -420,17 +420,8 @@ export const login = spacetimedb.reducer(
   },
 );
 
-export const createConnection = spacetimedb.reducer(
-  {
-    connection_id: t.string(),
-    user_id: t.string(),
-    external_connection_id: t.string(),
-    institution_id: t.string(),
-    institution_name: t.string(),
-    connected_at: t.timestamp(),
-  },
-  (ctx, args) => {
-    assertUserExists(ctx, args.user_id);
+function createConnectionInternal(ctx: any, args: any): void {
+  assertUserExists(ctx, args.user_id);
 
     const existing = ctx.db.connections.id.find(args.connection_id);
     if (existing) {
@@ -464,8 +455,50 @@ export const createConnection = spacetimedb.reducer(
       connected_at: args.connected_at,
       updated_at: ctx.timestamp,
     });
+}
+
+export const createConnection = spacetimedb.reducer(
+  {
+    connection_id: t.string(),
+    user_id: t.string(),
+    external_connection_id: t.string(),
+    institution_id: t.string(),
+    institution_name: t.string(),
+    connected_at: t.timestamp(),
   },
+  (ctx, args) => createConnectionInternal(ctx, args),
 );
+
+function syncAccountInternal(ctx: any, args: any): void {
+  const connection = ctx.db.connections.id.find(args.connection_id);
+
+  if (!connection || connection.status !== "ACTIVE") {
+    throw new Error("Cannot sync an account for an inactive connection");
+  }
+
+  const existing = ctx.db.accounts.external_account_id.find(
+    args.external_account_id,
+  );
+
+  if (existing && existing.connection_id !== args.connection_id) {
+    throw new Error("External account is already linked to another connection");
+  }
+
+  const row = {
+    id: args.external_account_id,
+    connection_id: args.connection_id,
+    external_account_id: args.external_account_id,
+    name: args.name,
+    account_type: args.account_type,
+    account_mask: args.account_mask,
+    currency: args.currency,
+    balance: args.balance,
+    updated_at: args.updated_at,
+  };
+
+  if (existing) ctx.db.accounts.id.update({ ...existing, ...row });
+  else ctx.db.accounts.insert(row);
+}
 
 export const syncAccount = spacetimedb.reducer(
   {
@@ -478,45 +511,11 @@ export const syncAccount = spacetimedb.reducer(
     balance: t.f64(),
     updated_at: t.timestamp(),
   },
-  (ctx, args) => {
-    const connection = ctx.db.connections.id.find(args.connection_id);
-    if (!connection || connection.status !== "ACTIVE") {
-      throw new Error("Cannot sync an account for an inactive connection");
-    }
-
-    const existing = ctx.db.accounts.external_account_id.find(args.external_account_id);
-    if (existing && existing.connection_id !== args.connection_id) {
-      throw new Error("External account is already linked to another connection");
-    }
-
-    const row = {
-      id: args.external_account_id,
-      connection_id: args.connection_id,
-      external_account_id: args.external_account_id,
-      name: args.name,
-      account_type: args.account_type,
-      account_mask: args.account_mask,
-      currency: args.currency,
-      balance: args.balance,
-      updated_at: args.updated_at,
-    };
-
-    if (existing) ctx.db.accounts.id.update({ ...existing, ...row });
-    else ctx.db.accounts.insert(row);
-  },
+  (ctx, args) => syncAccountInternal(ctx, args),
 );
 
-export const syncTransaction = spacetimedb.reducer(
-  {
-    external_transaction_id: t.string(),
-    account_id: t.string(),
-    description: t.string(),
-    category: t.option(t.string()),
-    amount: t.f64(),
-    date: t.timestamp(),
-  },
-  (ctx, args) => {
-    if (!ctx.db.accounts.id.find(args.account_id)) {
+function syncTransactionInternal(ctx: any, args: any): void {
+  if (!ctx.db.accounts.id.find(args.account_id)) {
       throw new Error("Cannot sync a transaction for an unknown account");
     }
 
@@ -539,22 +538,22 @@ export const syncTransaction = spacetimedb.reducer(
 
     if (existing) ctx.db.transactions.id.update({ ...existing, ...row });
     else ctx.db.transactions.insert(row);
+}
+
+export const syncTransaction = spacetimedb.reducer(
+  {
+    external_transaction_id: t.string(),
+    account_id: t.string(),
+    description: t.string(),
+    category: t.option(t.string()),
+    amount: t.f64(),
+    date: t.timestamp(),
   },
+  (ctx, args) => syncTransactionInternal(ctx, args),
 );
 
-export const syncHolding = spacetimedb.reducer(
-  {
-    external_holding_id: t.string(),
-    account_id: t.string(),
-    symbol: t.string(),
-    name: t.string(),
-    quantity: t.f64(),
-    market_value: t.f64(),
-    price_per_share: t.f64(),
-    updated_at: t.timestamp(),
-  },
-  (ctx, args) => {
-    if (!ctx.db.accounts.id.find(args.account_id)) {
+function syncHoldingInternal(ctx: any, args: any): void {
+  if (!ctx.db.accounts.id.find(args.account_id)) {
       throw new Error("Cannot sync a holding for an unknown account");
     }
 
@@ -577,22 +576,24 @@ export const syncHolding = spacetimedb.reducer(
 
     if (existing) ctx.db.holdings.id.update({ ...existing, ...row });
     else ctx.db.holdings.insert(row);
+}
+
+export const syncHolding = spacetimedb.reducer(
+  {
+    external_holding_id: t.string(),
+    account_id: t.string(),
+    symbol: t.string(),
+    name: t.string(),
+    quantity: t.f64(),
+    market_value: t.f64(),
+    price_per_share: t.f64(),
+    updated_at: t.timestamp(),
   },
+  (ctx, args) => syncHoldingInternal(ctx, args)
 );
 
-export const syncLoan = spacetimedb.reducer(
-  {
-    account_id: t.string(),
-    has_loan: t.bool(),
-    original_principal: t.option(t.f64()),
-    remaining_principal: t.option(t.f64()),
-    interest_rate: t.option(t.f64()),
-    interest_type: t.option(t.string()),
-    minimum_payment: t.option(t.f64()),
-    next_due_date: t.option(t.timestamp()),
-  },
-  (ctx, args) => {
-    if (!ctx.db.accounts.id.find(args.account_id)) {
+function syncLoanInternal(ctx: any, args: any) {
+  if (!ctx.db.accounts.id.find(args.account_id)) {
       throw new Error("Cannot sync loan details for an unknown account");
     }
 
@@ -624,7 +625,20 @@ export const syncLoan = spacetimedb.reducer(
 
     if (existing) ctx.db.loan_details.account_id.update(row);
     else ctx.db.loan_details.insert(row);
+}
+
+export const syncLoan = spacetimedb.reducer(
+  {
+    account_id: t.string(),
+    has_loan: t.bool(),
+    original_principal: t.option(t.f64()),
+    remaining_principal: t.option(t.f64()),
+    interest_rate: t.option(t.f64()),
+    interest_type: t.option(t.string()),
+    minimum_payment: t.option(t.f64()),
+    next_due_date: t.option(t.timestamp()),
   },
+  (ctx, args) => syncLoanInternal(ctx, args),
 );
 
 export const updateAsset = spacetimedb.reducer(
@@ -730,7 +744,7 @@ export const connectInstitution = spacetimedb.procedure(
     // Use the provider's connection UUID as the local primary key too. This
     // gives the app a stable one-to-one mapping and makes webhook lookup easy.
     ctx.withTx((tx: any) => {
-      createConnection(tx, {
+      createConnectionInternal(tx, {
         connection_id: externalConnectionId,
         user_id: user.id,
         external_connection_id: externalConnectionId,
@@ -910,7 +924,7 @@ export const transactionWebhook = spacetimedb.httpHandler((ctx, request) => {
         throw new Error("Webhook account is not linked to the specified connection");
       }
 
-      syncAccount(tx, {
+      syncAccountInternal(tx, {
         connection_id: connection.id,
         external_account_id: externalAccountId,
         name: requiredString(providerAccount.name, "account.name"),
@@ -921,7 +935,7 @@ export const transactionWebhook = spacetimedb.httpHandler((ctx, request) => {
         updated_at: timestamp(providerAccount.updated_at, tx.timestamp),
       });
 
-      syncTransaction(tx, {
+      syncTransactionInternal(tx, {
         external_transaction_id: requiredString(providerTransaction.id, "transaction.id"),
         account_id: externalAccountId,
         description: requiredString(providerTransaction.description, "transaction.description"),
