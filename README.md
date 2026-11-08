@@ -4,9 +4,12 @@ Fin360+5 is an AI-powered financial navigator that helps users understand their 
 
 ## Setup
 
+Start a Postgres server (see [`mock-financial-api/README.md`](./mock-financial-api/README.md) for details). Ensure `psql` and `createdb` commands are available with `which psql; which createdb`. Then,
+
 ```bash
 npm run install:all
-npm run dev # (just runs frontend)
+npm run setup
+npm run dev
 ```
 
 ## File structure

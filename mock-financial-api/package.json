@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "seed": "node src/db/seed.js"
+    "seed": "node src/db/seed.js",
+    "setup": "createdb mock_financial_api && psql mock_financial_api -f src/db/schema.sql && npm run seed"
   },
   "keywords": [],
   "author": "",
