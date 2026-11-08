@@ -12,6 +12,8 @@ npm run setup
 npm run dev
 ```
 
+Then navigate to `localhost:3000` in your favorite web browser.
+
 ## File structure
 
 ```bash
