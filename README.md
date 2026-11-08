@@ -12,6 +12,15 @@ npm run setup
 npm run dev
 ```
 
+## Ports
+
+frontend: port 3000
+mock-financial API: port 4000
+postgresql: port 5173
+backend:
+ollama:
+node:
+
 Then navigate to `localhost:3000` in your favorite web browser.
 
 ## File structure
