@@ -15,11 +15,13 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "dev": "npm run dev --prefix frontend",
-    "install:all": "npm install --prefix frontend && npm install --prefix mock-financial-api",
-    "format": "prettier --write ."
+    "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix mock-financial-api\"",
+    "install:all": "npm install && npm install --prefix frontend && npm install --prefix mock-financial-api",
+    "format": "prettier --write .",
+    "setup": "npm run setup --prefix mock-financial-api"
   },
   "devDependencies": {
+    "concurrently": "^10.0.7",
     "prettier": "^3.9.10"
   }
 }
