@@ -10,7 +10,7 @@ It also provides an API to allow a client to subscribe to webhooks, and an API t
 
 ### Environment variables
 
-Copy `.env.example` into `.env`. It would be good practice to generate a random mock API key and webhook secret, but it doesn't matter too much for local development. *Put the `MOCK_API_KEY` in the client's `.env` too.*
+Copy `.env.example` into `.env`. It would be good practice to generate a random mock API key and webhook secret, but it doesn't matter too much for local development. _Put the `MOCK_API_KEY` in the client's `.env` too._
 
 ### Database
 
@@ -28,7 +28,7 @@ sudo mkdir -p /etc/paths.d
 echo /Applications/Postgres.app/Contents/Versions/latest/bin sudo tee /etc/paths.d/postgresapp
 ```
 
-3. *(start here if alr have Postgres App)* Open Postgres app and click **Initialize** to start a Postgres server.
+3. _(start here if alr have Postgres App & commands)_ Open Postgres app and click **Initialize** to start a Postgres server.
 4. Create a database with `createdb mock_financial_api`
 5. Now, apply the database schema and seed the database:
 
