@@ -1,0 +1,396 @@
+// folio dashboard — everything in one file. Needs: react, lucide-react, tailwindcss v4.
+import { useState, type ReactNode } from "react";
+import { Bell, Leaf, MessageCircle, Send, Sparkles, X, TrendingUp, AlertTriangle, PartyPopper } from "lucide-react";
+
+/* ================= MOCK DATA (swap for backend) ================= */
+const totals = { netWorth: 348000, assets: 602000, liabilities: -254000 };
+
+const accounts = [
+  { name: "Everyday Checking", type: "Checking", institution: "Capital One", balance: 12800, deposits: 6200, withdrawals: -4000, cashFlow: 2200 },
+  { name: "High-yield Savings", type: "Savings", institution: "Ally", balance: 30000, deposits: 800, withdrawals: 0, cashFlow: 800 },
+];
+
+const recurring = [
+  { name: "Mortgage", category: "Housing", total: 1870 },
+  { name: "Car loan", category: "Auto", total: 325 },
+  { name: "Student loan", category: "Education", total: 280 },
+  { name: "Spotify", category: "Subscription", total: 11.99 },
+  { name: "Netflix", category: "Subscription", total: 15.49 },
+  { name: "Gym", category: "Health", total: 45 },
+];
+
+const alerts = [
+  { tone: "warn" as const, title: "Dining is up 32%", body: "You spent $412 on restaurants this month vs. a $312 average." },
+  { tone: "good" as const, title: "Paycheck went up", body: "Your last two deposits were $180 higher than usual." },
+];
+
+const projection = [42800, 44100, 45900, 47200, 49600, 51200];
+
+const investments = [
+  { name: "Brokerage", type: "Individual", institution: "Fidelity", value: 48200, contributions: 40200, gain: 8000 },
+  { name: "Roth IRA", type: "Retirement", institution: "Vanguard", value: 24000, contributions: 19600, gain: 4400 },
+  { name: "401(k)", type: "Retirement", institution: "Empower", value: 55000, contributions: 46000, gain: 9000 },
+];
+
+const holdings = [
+  { ticker: "VTI", name: "Total Stock Market", shares: 120, pct: 38 },
+  { ticker: "AAPL", name: "Apple", shares: 45, pct: 14 },
+  { ticker: "VXUS", name: "Intl Stock", shares: 160, pct: 18 },
+  { ticker: "BND", name: "Total Bond", shares: 140, pct: 16 },
+  { ticker: "MSFT", name: "Microsoft", shares: 22, pct: 14 },
+];
+
+const assets = [
+  { name: "Your home", detail: "Single-family · Austin, TX", value: 410000, change: "+4.1% this year" },
+  { name: "2022 Toyota RAV4", detail: "Vehicle · 31k miles", value: 22000, change: "−8% this year" },
+];
+
+const loans = [
+  { name: "Home mortgage", type: "Mortgage", principal: 320000, remaining: 248000, owed: 251200, rate: "6.25% fixed", payoff: "Sep 2051", pctPaid: 22 },
+  { name: "Auto loan", type: "Auto", principal: 25000, remaining: 6000, owed: 6150, rate: "4.9% fixed", payoff: "Jun 2027", pctPaid: 76 },
+];
+
+const usd = (n: number) =>
+  (n < 0 ? "−" : "") + "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: n % 1 ? 2 : 0 });
+
+/* ================= CHAT PANEL ================= */
+
+type Msg = { from: "me" | "ai"; text: string };
+
+const starters = ["Can I afford a $35k car?", "How fast can I pay off my car loan?", "What should I cut back on?"];
+
+function Chat({ onClose }: { onClose: () => void }) {
+  const [msgs, setMsgs] = useState<Msg[]>([
+    { from: "ai", text: "Hi! Ask me about a big decision, like buying a car or a house, and I'll check it against your real numbers." },
+  ]);
+  const [input, setInput] = useState("");
+
+  const send = (text: string) => {
+    if (!text.trim()) return;
+    // TODO: hook up to the backend / Qwen endpoint
+    setMsgs((m) => [...m, { from: "me", text }, { from: "ai", text: "Thinking about that… (connect the AI backend here)" }]);
+    setInput("");
+  };
+
+  return (
+    <aside aria-label="folio assistant" className="flex h-full flex-col bg-panel">
+      <header className="flex items-center justify-between border-b px-5 py-4">
+        <div className="flex items-center gap-2">
+          <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground"><Sparkles className="size-4" aria-hidden /></span>
+          <div>
+            <h2 className="font-semibold leading-tight">folio intelligence</h2>
+            <p className="text-sm text-muted-foreground">Plan what's next</p>
+          </div>
+        </div>
+        <button onClick={onClose} aria-label="Hide assistant" className="grid size-11 place-items-center rounded-lg hover:bg-accent">
+          <X className="size-5" aria-hidden />
+        </button>
+      </header>
+
+      <ol aria-live="polite" className="flex-1 space-y-3 overflow-y-auto px-5 py-5">
+        {msgs.map((m, i) => (
+          <li key={i} className={m.from === "me" ? "ml-8 rounded-xl bg-primary p-3 text-primary-foreground" : "mr-4 rounded-xl border bg-card p-3"}>
+            <span className="sr-only">{m.from === "me" ? "You:" : "Assistant:"}</span>
+            {m.text}
+          </li>
+        ))}
+      </ol>
+
+      <div className="space-y-2 px-5 pb-3">
+        {starters.map((s) => (
+          <button key={s} onClick={() => send(s)} className="block w-full rounded-lg border bg-card px-3 py-2.5 text-left text-sm hover:bg-accent">
+            {s}
+          </button>
+        ))}
+      </div>
+
+      <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex gap-2 border-t p-4">
+        <label htmlFor="chat-input" className="sr-only">Ask about your finances</label>
+        <input
+          id="chat-input" value={input} onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask about your money…"
+          className="min-h-11 flex-1 rounded-lg border border-input bg-card px-3 placeholder:text-muted-foreground"
+        />
+        <button type="submit" aria-label="Send message" className="grid size-11 place-items-center rounded-lg bg-primary text-primary-foreground hover:opacity-90">
+          <Send className="size-4" aria-hidden />
+        </button>
+      </form>
+      <p className="px-4 pb-3 text-center text-xs text-muted-foreground">Not financial advice. For big moves, talk to an advisor.</p>
+    </aside>
+  );
+}
+
+/* ================= TAB SECTIONS ================= */
+
+function Section({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) {
+  return (
+    <section className="space-y-4">
+      <div>
+        <h3 className="font-display text-2xl">{title}</h3>
+        {sub && <p className="text-muted-foreground">{sub}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" }) {
+  return (
+    <div>
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className={`font-semibold ${tone === "up" ? "text-success" : tone === "down" ? "text-destructive" : ""}`}>{value}</dd>
+    </div>
+  );
+}
+
+const card = "rounded-xl border bg-card p-5";
+
+function AccountsTab() {
+  const max = Math.max(...projection), min = Math.min(...projection);
+  const pts = projection.map((v, i) => `${(i / (projection.length - 1)) * 300},${90 - ((v - min) / (max - min)) * 80}`).join(" ");
+  return (
+    <div className="space-y-10">
+      <Section title="Your accounts" sub="Checking and savings this month">
+        <div className="grid gap-4 md:grid-cols-2">
+          {accounts.map((a) => (
+            <article key={a.name} className={card}>
+              <p className="text-sm text-muted-foreground">{a.type} · {a.institution}</p>
+              <h4 className="font-semibold">{a.name}</h4>
+              <p className="my-3 font-display text-3xl">{usd(a.balance)}</p>
+              <dl className="grid grid-cols-3 gap-2">
+                <Stat label="Deposits" value={usd(a.deposits)} />
+                <Stat label="Withdrawals" value={usd(a.withdrawals)} />
+                <Stat label="Cash flow" value={(a.cashFlow > 0 ? "+" : "") + usd(a.cashFlow)} tone={a.cashFlow >= 0 ? "up" : "down"} />
+              </dl>
+            </article>
+          ))}
+        </div>
+      </Section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section title="Recurring payments">
+          <ul className={`${card} divide-y py-2`}>
+            {recurring.map((r) => (
+              <li key={r.name} className="flex justify-between py-2.5">
+                <span>{r.name} <span className="text-sm text-muted-foreground">· {r.category}</span></span>
+                <span className="font-semibold">{usd(r.total)}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+        <Section title="A few things shifted">
+          <ul className="space-y-3">
+            {alerts.map((a) => (
+              <li key={a.title} className={`${card} flex gap-3`}>
+                {a.tone === "warn"
+                  ? <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" aria-label="Warning" />
+                  : <TrendingUp className="mt-0.5 size-5 shrink-0 text-success" aria-label="Good news" />}
+                <div><p className="font-semibold">{a.title}</p><p className="text-muted-foreground">{a.body}</p></div>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      </div>
+
+      <Section title="Your next three months" sub="If you keep spending like you do now">
+        <div className={`${card} flex flex-wrap items-center gap-6`}>
+          <svg viewBox="0 0 300 100" className="h-32 flex-1 min-w-60" role="img" aria-label={`Balance rising from ${usd((projection[0] ?? 0))} to ${usd((projection[projection.length - 1] ?? 0))}`}>
+            <polyline points={pts} fill="none" className="stroke-primary" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+          <div>
+            <p className="font-display text-3xl text-success">+{usd((projection[projection.length - 1] ?? 0) - (projection[0] ?? 0))}</p>
+            <p className="text-muted-foreground">Projected by February</p>
+          </div>
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+function InvestmentsTab() {
+  return (
+    <div className="space-y-10">
+      <Section title="Where it's invested">
+        <div className="grid gap-4 md:grid-cols-3">
+          {investments.map((i) => (
+            <article key={i.name} className={card}>
+              <p className="text-sm text-muted-foreground">{i.type} · {i.institution}</p>
+              <h4 className="font-semibold">{i.name}</h4>
+              <p className="my-3 font-display text-3xl">{usd(i.value)}</p>
+              <dl className="grid grid-cols-2 gap-2">
+                <Stat label="Contributed" value={usd(i.contributions)} />
+                <Stat label="Gain" value={"+" + usd(i.gain)} tone="up" />
+              </dl>
+            </article>
+          ))}
+        </div>
+      </Section>
+      <Section title="One portfolio. The whole picture.">
+        <div className={card}>
+          <div className="mb-5 flex h-3 overflow-hidden rounded-full bg-muted" aria-hidden>
+            {holdings.map((h, i) => <span key={h.ticker} style={{ width: `${h.pct}%`, opacity: 1 - i * 0.16 }} className="bg-primary" />)}
+          </div>
+          <table className="w-full text-left">
+            <caption className="sr-only">Portfolio holdings</caption>
+            <thead className="text-sm text-muted-foreground">
+              <tr><th className="pb-2 font-medium">Holding</th><th className="pb-2 text-right font-medium">Shares</th><th className="pb-2 text-right font-medium">Portfolio</th></tr>
+            </thead>
+            <tbody className="divide-y">
+              {holdings.map((h) => (
+                <tr key={h.ticker}>
+                  <td className="py-2.5"><span className="font-semibold">{h.ticker}</span> <span className="text-muted-foreground">{h.name}</span></td>
+                  <td className="py-2.5 text-right">{h.shares}</td>
+                  <td className="py-2.5 text-right font-semibold">{h.pct}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Section>
+      <div className={`${card} bg-secondary`}>
+        <p className="font-semibold">Growth-oriented, broadly diversified</p>
+        <p className="text-muted-foreground">You're up $21,400 overall. Most of your money is in broad index funds, which keeps risk spread out.</p>
+      </div>
+    </div>
+  );
+}
+
+function AssetsTab() {
+  return (
+    <Section title="What you own" sub="Estimated values, updated monthly">
+      <div className="grid gap-4 md:grid-cols-2">
+        {assets.map((a) => (
+          <article key={a.name} className={card}>
+            <p className="text-sm text-muted-foreground">{a.detail}</p>
+            <h4 className="font-semibold">{a.name}</h4>
+            <p className="mt-3 font-display text-3xl">{usd(a.value)}</p>
+            <p className="text-muted-foreground">{a.change}</p>
+          </article>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function LoansTab() {
+  return (
+    <Section title="What you owe" sub="Every loan, and when it's done">
+      <div className="grid gap-4 md:grid-cols-2">
+        {loans.map((l) => (
+          <article key={l.name} className={card}>
+            <p className="text-sm text-muted-foreground">{l.type}</p>
+            <h4 className="font-semibold">{l.name}</h4>
+            <p className="my-3 font-display text-3xl">{usd(l.owed)} <span className="font-sans text-base text-muted-foreground">owed</span></p>
+            <dl className="mb-4 grid grid-cols-2 gap-3">
+              <Stat label="Borrowed" value={usd(l.principal)} />
+              <Stat label="Principal left" value={usd(l.remaining)} />
+              <Stat label="Interest rate" value={l.rate} />
+              <Stat label="Expected payoff" value={l.payoff} />
+            </dl>
+            <div role="progressbar" aria-valuenow={l.pctPaid} aria-valuemin={0} aria-valuemax={100} aria-label={`${l.name} paid off`} className="h-2.5 overflow-hidden rounded-full bg-muted">
+              <div className="h-full bg-primary" style={{ width: `${l.pctPaid}%` }} />
+            </div>
+            <p className="mt-1.5 text-sm text-muted-foreground">{l.pctPaid}% paid off</p>
+          </article>
+        ))}
+      </div>
+      <div className={`${card} flex gap-3 bg-secondary`}>
+        <PartyPopper className="size-5 shrink-0 text-success" aria-hidden />
+        <p><span className="font-semibold">Almost there!</span> Paying an extra $250/month would clear your auto loan by December.</p>
+      </div>
+    </Section>
+  );
+}
+
+
+/* ================= MAIN DASHBOARD ================= */
+const tabs = [
+  { id: "accounts", label: "Accounts", el: <AccountsTab /> },
+  { id: "investments", label: "Investments", el: <InvestmentsTab /> },
+  { id: "assets", label: "Assets", el: <AssetsTab /> },
+  { id: "loans", label: "Loans", el: <LoansTab /> },
+];
+
+export default function Dashboard() {
+  const [tab, setTab] = useState("accounts");
+  const [chatOpen, setChatOpen] = useState(true);
+
+  return (
+    <div className="flex h-dvh flex-col">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-card focus:p-3">Skip to content</a>
+      <header className="flex items-center justify-between border-b bg-card px-6 py-3">
+        <div className="flex items-center gap-8">
+          <span className="flex items-center gap-2 text-lg font-bold">
+            <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground"><Leaf className="size-4" aria-hidden /></span>
+            folio
+          </span>
+          <nav aria-label="Main" className="hidden gap-1 sm:flex">
+            {["Overview", "Plans", "Activity"].map((n, i) => (
+              <a key={n} href="#" aria-current={i === 0 ? "page" : undefined}
+                className={`rounded-md px-3 py-2 ${i === 0 ? "bg-secondary font-semibold text-secondary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{n}</a>
+            ))}
+          </nav>
+        </div>
+        <div className="flex items-center gap-2">
+          <button aria-label="Notifications" className="grid size-11 place-items-center rounded-lg hover:bg-accent"><Bell className="size-5" aria-hidden /></button>
+          <span className="grid size-9 place-items-center rounded-full bg-accent font-semibold text-accent-foreground" aria-label="Signed in as Rashmi">R</span>
+        </div>
+      </header>
+
+      <div className="flex min-h-0 flex-1">
+        <main id="main" className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-5xl space-y-8 px-6 py-8">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h1 className="font-display text-4xl">A clear view of your money.</h1>
+                <p className="text-muted-foreground">Everything you have and owe, in one place.</p>
+              </div>
+              <p className="text-sm text-muted-foreground">Updated Nov 7, 2026</p>
+            </div>
+
+            <dl className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-xl bg-primary p-5 text-primary-foreground">
+                <dt className="opacity-90">Net worth</dt>
+                <dd className="font-display text-4xl">{usd(totals.netWorth)}</dd>
+                <dd className="text-sm opacity-90">Up $8,400 since last month</dd>
+              </div>
+              <div className="rounded-xl border bg-card p-5">
+                <dt className="text-muted-foreground">Total assets</dt>
+                <dd className="font-display text-4xl">{usd(totals.assets)}</dd>
+                <dd className="text-sm text-muted-foreground">Cash, investments, property</dd>
+              </div>
+              <div className="rounded-xl border bg-card p-5">
+                <dt className="text-muted-foreground">Total liabilities</dt>
+                <dd className="font-display text-4xl">{usd(totals.liabilities)}</dd>
+                <dd className="text-sm text-muted-foreground">Mortgage and auto loan</dd>
+              </div>
+            </dl>
+
+            <div role="tablist" aria-label="Finance sections" className="flex gap-1 overflow-x-auto border-b">
+              {tabs.map((t) => (
+                <button key={t.id} role="tab" id={`tab-${t.id}`} aria-selected={tab === t.id} aria-controls={`panel-${t.id}`}
+                  onClick={() => setTab(t.id)}
+                  className={`-mb-px min-h-11 border-b-2 px-4 font-medium ${tab === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {tabs.map((t) => (
+              <div key={t.id} role="tabpanel" id={`panel-${t.id}`} aria-labelledby={`tab-${t.id}`} hidden={tab !== t.id}>
+                {tab === t.id && t.el}
+              </div>
+            ))}
+          </div>
+        </main>
+
+        {chatOpen ? (
+          <div className="hidden w-96 shrink-0 border-l md:block"><Chat onClose={() => setChatOpen(false)} /></div>
+        ) : (
+          <button onClick={() => setChatOpen(true)} className="fixed bottom-6 right-6 flex min-h-12 items-center gap-2 rounded-full bg-primary px-5 font-semibold text-primary-foreground shadow-lg">
+            <MessageCircle className="size-5" aria-hidden /> Ask folio
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

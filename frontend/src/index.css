@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-panel: var(--panel);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.006 120);
+  --foreground: oklch(0.22 0.025 155);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.025 155);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.025 155);
+  /* deep forest green */
+  --primary: oklch(0.38 0.07 155);
+  --primary-foreground: oklch(0.98 0.01 120);
+  --secondary: oklch(0.95 0.02 140);
+  --secondary-foreground: oklch(0.3 0.06 155);
+  --muted: oklch(0.96 0.008 120);
+  /* darkened for WCAG AA on white */
+  --muted-foreground: oklch(0.45 0.02 155);
+  --accent: oklch(0.92 0.04 145);
+  --accent-foreground: oklch(0.28 0.06 155);
+  --destructive: oklch(0.5 0.17 28);
+  --destructive-foreground: oklch(0.98 0 0);
+  --success: oklch(0.45 0.11 150);
+  --panel: oklch(0.955 0.02 140);
+  --border: oklch(0.9 0.012 130);
+  --input: oklch(0.88 0.012 130);
+  --ring: oklch(0.45 0.09 155);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html { font-size: 17px; }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    line-height: 1.55;
+    font-feature-settings: "tnum";
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-ring);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+}
