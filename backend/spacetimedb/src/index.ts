@@ -192,7 +192,6 @@ const spacetimedb = schema(
     env: {
       MOCK_API_KEY: t.string(),
       MOCK_API_URL: t.string(),
-      WEBHOOK_SECRET: t.string(),
     },
   },
   /*  financial_goals, */

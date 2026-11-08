@@ -1,3 +1,8 @@
 # npm
 **/node_modules/
 **/.env
+
+# spacetime
+backend/spacetimedb/dist/
+backend/.env.local
+backend/spacetime.local.json

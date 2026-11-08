@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
+    "dev": "concurrently \"spacetime start --listen-addr 127.0.0.1:5001\" \"dotenv -e .env -- spacetime dev --server-only fin360-dev\"",
     "build": "spacetime build",
     "publish": "spacetime publish"
   },
@@ -13,6 +14,8 @@
     "spacetimedb": "2.14.*"
   },
   "devDependencies": {
+    "concurrently": "^10.0.7",
+    "dotenv-cli": "^11.1.0",
     "typescript": "~5.6.2"
   }
 }
