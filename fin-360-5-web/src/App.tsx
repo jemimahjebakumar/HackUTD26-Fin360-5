@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { tables, reducers } from './module_bindings';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
-
+import Chat from "./Chat";
 function App() {
   const [name, setName] = useState('');
 
@@ -63,6 +63,9 @@ function App() {
           </ul>
         )}
       </div>
+
+        <h1 style={{ textAlign: "center" }}>Fin360</h1>
+      <Chat />
     </div>
   );
 }
