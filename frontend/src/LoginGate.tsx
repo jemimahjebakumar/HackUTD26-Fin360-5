@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import loginBg from "./login-bg.jpg";
 
 // Fake login for the demo. Pick a user and you're in.
-const USERS = ["Asha", "Jemimah", "Shubhi"];
+const USERS = ["Asha", "Sarah", "Shubhi"];
 
 export default function LoginGate({ children }: { children: ReactNode }) {
   const [user, setUser] = useState("");
