@@ -25,6 +25,13 @@ brew services start postgresql@17 # start postgre server
 createdb mock_financial_api # connect to server and create a database called mock_financial_api
 ```
 
+Now, apply the database schema and seed the database:
+
+```zsh
+psql mock_financial_api -f src/db/schema.sql
+npm run seed
+```
+
 ## File structure
 
 ```bash
@@ -50,3 +57,7 @@ mock-financial-api/
 ├── .gitignore
 └── package.json
 ```
+
+## AI Disclosure
+
+ChatGPT was used to generate the template for this mock API.
