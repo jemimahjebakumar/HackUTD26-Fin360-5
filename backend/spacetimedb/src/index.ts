@@ -15,18 +15,18 @@ import {
 
 const DEMO_USERS = [
   {
-    id: "alex",
-    name: "Alex Morgan",
+    id: "jemimah",
+    name: "Jemimah Jebakumar",
     externalId: "REPLACE_WITH_ALEX_CUSTOMER_UUID",
   },
   {
-    id: "jordan",
-    name: "Jordan Lee",
+    id: "asha",
+    name: "Asha Mavankal",
     externalId: "REPLACE_WITH_JORDAN_CUSTOMER_UUID",
   },
   {
-    id: "taylor",
-    name: "Taylor Brooks",
+    id: "shubhi",
+    name: "Shubhi Kohli",
     externalId: "REPLACE_WITH_TAYLOR_CUSTOMER_UUID",
   },
 ];

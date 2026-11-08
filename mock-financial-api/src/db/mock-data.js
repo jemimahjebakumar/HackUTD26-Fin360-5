@@ -5,10 +5,10 @@
 
 export const CUSTOMERS = [
   // ----------------------------------------------------------
-  // Customer 1: Alex Morgan
+  // Customer 1
   // ----------------------------------------------------------
   {
-    name: "Alex Morgan",
+    name: "Jemimah Jebakumar",
     institutions: [
       {
         name: "Chase",
@@ -105,10 +105,10 @@ export const CUSTOMERS = [
   },
 
   // ----------------------------------------------------------
-  // Customer 2: Jordan Lee
+  // Customer 2
   // ----------------------------------------------------------
   {
-    name: "Jordan Lee",
+    name: "Asha Mavankal",
     institutions: [
       {
         name: "Bank of America",
@@ -182,10 +182,10 @@ export const CUSTOMERS = [
   },
 
   // ----------------------------------------------------------
-  // Customer 3: Taylor Brooks
+  // Customer 3
   // ----------------------------------------------------------
   {
-    name: "Taylor Brooks",
+    name: "Shubhi Kohli",
     institutions: [
       {
         name: "Wells Fargo",
