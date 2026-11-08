@@ -9,6 +9,11 @@ Start a Postgres server (see [`mock-financial-api/README.md`](./mock-financial-a
 ```bash
 npm run install:all
 npm run setup
+```
+
+Now, COPY THE PRINTED USER IDs from setup to `backend/spacetimedb/src/index.ts` !!!!!
+
+```bash
 npm run dev
 ```
 
