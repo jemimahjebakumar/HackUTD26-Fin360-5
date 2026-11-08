@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import "dotenv/config";
 
 import { pool } from "./db/pool.js";
@@ -13,18 +12,13 @@ export async function notifyUser(appUserId, event) {
 
   const body = JSON.stringify(event);
 
-  const signature = crypto
-    .createHmac("sha256", process.env.WEBHOOK_SECRET)
-    .update(body)
-    .digest("hex");
-
   for (const subscription of result.rows) {
     try {
       const response = await fetch(subscription.callback_url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Mock-Signature": `sha256=${signature}`,
+          "X-Mock-Signature": process.env.WEBHOOK_SECRET,
         },
         body,
       });

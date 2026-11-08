@@ -381,6 +381,11 @@ app.post("/v1/simulate/transactions", async (req, res) => {
         connection_id: user.connection_id,
         account_id,
         resource_id: transaction.rows[0].id,
+
+        // Include these so SpacetimeDB can process the webhook
+        // without making another external API request.
+        transaction: transaction.rows[0],
+        updated_account: account.rows[0],
       });
     }
 
