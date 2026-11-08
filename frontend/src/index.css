@@ -32,36 +32,75 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-login-overlay: var(--login-overlay);
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.75rem;
-  --background: oklch(0.985 0.006 120);
-  --foreground: oklch(0.22 0.025 155);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.025 155);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.025 155);
-  /* deep forest green */
-  --primary: oklch(0.38 0.07 155);
-  --primary-foreground: oklch(0.98 0.01 120);
-  --secondary: oklch(0.95 0.02 140);
-  --secondary-foreground: oklch(0.3 0.06 155);
-  --muted: oklch(0.96 0.008 120);
-  /* darkened for WCAG AA on white */
-  --muted-foreground: oklch(0.45 0.02 155);
-  --accent: oklch(0.92 0.04 145);
-  --accent-foreground: oklch(0.28 0.06 155);
-  --destructive: oklch(0.5 0.17 28);
-  --destructive-foreground: oklch(0.98 0 0);
-  --success: oklch(0.45 0.11 150);
-  /* UTD orange */
-  --utd: oklch(0.65 0.17 55);
-  --utd-foreground: oklch(0.98 0.01 80);
-  --panel: oklch(0.955 0.02 140);
-  --border: oklch(0.9 0.012 130);
-  --input: oklch(0.88 0.012 130);
-  --ring: oklch(0.45 0.09 155);
+  --background: oklch(0.97 0.014 110);
+  --foreground: #40513B;
+  --card: oklch(0.995 0.004 110);
+  --card-foreground: #40513B;
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: #628141;
+  --primary-foreground: oklch(0.99 0.005 100);
+  --secondary: oklch(0.92 0.028 125);
+  --secondary-foreground: #40513B;
+  --muted: oklch(0.93 0.018 125);
+  --muted-foreground: oklch(0.46 0.025 135);
+  --accent: oklch(0.9 0.035 125);
+  --accent-foreground: #40513B;
+  --destructive: oklch(0.49 0.16 30);
+  --destructive-foreground: oklch(0.99 0.005 100);
+  --success: oklch(0.45 0.1 135);
+  --utd: oklch(0.55 0.15 50);
+  --utd-foreground: oklch(0.99 0.005 100);
+  --panel: oklch(0.95 0.025 125);
+  --border: oklch(0.8 0.035 125);
+  --input: oklch(0.7 0.04 125);
+  --ring: #628141;
+  --login-overlay: #E5D9B6;
+}
+
+.dark {
+  color-scheme: dark;
+  --radius: 0.75rem;
+  /* dark moss base built from #40513B */
+  --background: oklch(0.2 0.022 135);
+  --foreground: #E5D9B6;
+  --card: #40513B;
+  --card-foreground: #E5D9B6;
+  --popover: #40513B;
+  --popover-foreground: #E5D9B6;
+  --primary: oklch(0.56 0.09 135); /* #628141 */
+  --primary-foreground: oklch(0.99 0.005 100);
+  --secondary: oklch(0.42 0.04 135); /* #40513B */
+  --secondary-foreground: oklch(0.92 0.04 92);
+  --muted: oklch(0.36 0.035 135);
+  --muted-foreground: oklch(0.85 0.025 95);
+  --accent: oklch(0.34 0.04 135);
+  --accent-foreground: oklch(0.92 0.04 92);
+  --destructive: oklch(0.72 0.14 35);
+  --destructive-foreground: oklch(0.17 0.02 135);
+  --success: oklch(0.76 0.12 135);
+  --utd: #E67E22;
+  --utd-foreground: oklch(0.17 0.02 60);
+  --panel: oklch(0.24 0.026 135);
+  --border: oklch(0.5 0.045 135);
+  --input: oklch(0.56 0.045 135);
+  --ring: oklch(0.9 0.045 92);
+  --login-overlay: oklch(0.26 0.04 135);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
 @layer base {
@@ -79,7 +118,47 @@
     outline-offset: 2px;
     border-radius: 6px;
   }
+  @media (prefers-reduced-motion: no-preference) {
+    .rise { animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+    .grow-x { transform-origin: left; animation: grow-x 0.8s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+  }
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
   }
+}
+
+@layer components {
+  /* soft gradient wash behind the dashboard */
+  .bg-wash {
+    background:
+      radial-gradient(60rem 24rem at 85% -10%, color-mix(in oklab, var(--utd) 6%, transparent), transparent 60%),
+      radial-gradient(50rem 22rem at -10% 0%, color-mix(in oklab, var(--primary) 18%, transparent), transparent 60%),
+      var(--color-background);
+  }
+  .card-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -14px color-mix(in oklab, var(--primary) 35%, transparent);
+  }
+}
+
+@layer components {
+  .fin360-theme-switch {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--card);
+    color: var(--foreground);
+    cursor: pointer;
+  }
+  .fin360-theme-switch:hover { background: var(--accent); }
 }

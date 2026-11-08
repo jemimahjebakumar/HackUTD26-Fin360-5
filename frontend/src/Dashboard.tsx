@@ -412,12 +412,6 @@ export default function Dashboard() {
             <span className="grid size-8 place-items-center rounded-lg bg-utd text-utd-foreground"><Leaf className="size-4" aria-hidden /></span>
             Fin360+5
           </span>
-          <nav aria-label="Main" className="hidden gap-1 sm:flex">
-            {["Overview", "Plans", "Activity"].map((n, i) => (
-              <a key={n} href="#" aria-current={i === 0 ? "page" : undefined}
-                className={`rounded-md px-3 py-2 ${i === 0 ? "bg-secondary font-semibold text-secondary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{n}</a>
-            ))}
-          </nav>
         </div>
         <div className="flex items-center gap-2">
           <button aria-label="Notifications" className="grid size-11 place-items-center rounded-lg hover:bg-accent"><Bell className="size-5" aria-hidden /></button>
