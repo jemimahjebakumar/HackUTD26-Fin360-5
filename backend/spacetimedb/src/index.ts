@@ -9,7 +9,7 @@ const users = table(
   {
     id: t.string().primaryKey(),
     name: t.string(),
-  }
+  },
 );
 
 const auth_sessions = table(
@@ -20,7 +20,7 @@ const auth_sessions = table(
     token: t.string().unique(),
     created_at: t.timestamp(),
     expires_at: t.timestamp(),
-  }
+  },
 );
 
 // ============================================================
@@ -40,7 +40,7 @@ const connections = table(
     status: t.string(),
     connected_at: t.timestamp(),
     updated_at: t.timestamp(),
-  }
+  },
 );
 
 // ============================================================
@@ -66,7 +66,7 @@ const accounts = table(
     payment_due_date: t.option(t.timestamp()),
 
     updated_at: t.timestamp(),
-  }
+  },
 );
 
 // ============================================================
@@ -86,7 +86,7 @@ const transactions = table(
     amount: t.f64(),
 
     date: t.timestamp(),
-  }
+  },
 );
 
 // ============================================================
@@ -107,7 +107,7 @@ const holdings = table(
     cost_basis: t.f64(),
 
     updated_at: t.timestamp(),
-  }
+  },
 );
 
 // ============================================================
@@ -129,7 +129,7 @@ const loan_details = table(
     minimum_payment: t.f64(),
     next_due_date: t.option(t.timestamp()),
     expected_payoff_date: t.option(t.timestamp()),
-  }
+  },
 );
 
 // ============================================================
@@ -147,7 +147,7 @@ const assets = table(
 
     estimated_value: t.f64(),
     updated_at: t.timestamp(),
-  }
+  },
 );
 
 /*
@@ -177,29 +177,31 @@ const financial_goals = table(
 // REGISTER SCHEMA
 // ============================================================
 
-const spacetimedb = schema({
-  users,
-  auth_sessions,
-  connections,
-  accounts,
-  transactions,
-  holdings,
-  loan_details,
-  assets,
+const spacetimedb = schema(
+  {
+    users,
+    auth_sessions,
+    connections,
+    accounts,
+    transactions,
+    holdings,
+    loan_details,
+    assets,
+  },
   {
     env: {
       MOCK_API_KEY: t.string(),
       MOCK_API_URL: t.string(),
-      WEBHOOK_SECRET
-    }
-  }
-/*  financial_goals, */
-});
+      WEBHOOK_SECRET: t.string(),
+    },
+  },
+  /*  financial_goals, */
+);
 
 export default spacetimedb;
 
 export const init = spacetimedb.init((_ctx) => {
-  // Fill users with hardcoded users  
+  // Fill users with hardcoded users
 });
 
 export const onConnect = spacetimedb.clientConnected((_ctx) => {
@@ -211,4 +213,3 @@ export const onDisconnect = spacetimedb.clientDisconnected((_ctx) => {
 });
 
 // REDUCERS (change the database)
-
