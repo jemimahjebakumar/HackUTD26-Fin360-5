@@ -46,12 +46,77 @@ const assets = [
 ];
 
 const loans = [
-  { name: "Home mortgage", type: "Mortgage", principal: 320000, remaining: 248000, owed: 251200, rate: "6.25% fixed", payoff: "Sep 2051", pctPaid: 22 },
-  { name: "Auto loan", type: "Auto", principal: 25000, remaining: 6000, owed: 6150, rate: "4.9% fixed", payoff: "Jun 2027", pctPaid: 76 },
+  { name: "Home mortgage", type: "Mortgage", principal: 320000, remaining: 248000, owed: 251200, rate: "6.25% fixed", payoff: "Sep 2051", pctPaid: 22, monthly: 1870 },
+  { name: "Auto loan", type: "Auto", principal: 25000, remaining: 6000, owed: 6150, rate: "4.9% fixed", payoff: "Jun 2027", pctPaid: 76, monthly: 325 },
 ];
 
 const usd = (n: number) =>
   (n < 0 ? "−" : "") + "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: n % 1 ? 2 : 0 });
+
+/* ================= CONFETTI (no install needed) ================= */
+const CONFETTI_COLORS = ["#2f6b4f", "#57a773", "#e87500", "#f4a261", "#e9c46a", "#ffffff"];
+
+function celebrate() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const canvas = document.createElement("canvas");
+  canvas.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999";
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) { canvas.remove(); return; }
+
+  const particles: { x: number; y: number; vx: number; vy: number; size: number; color: string; rot: number; vr: number; circle: boolean }[] = [];
+  for (const side of [0, 1]) {
+    const originX = side === 0 ? canvas.width * 0.15 : canvas.width * 0.85;
+    for (let i = 0; i < 70; i++) {
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.9;
+      const speed = 9 + Math.random() * 8;
+      particles.push({
+        x: originX,
+        y: canvas.height * 0.75,
+        vx: Math.cos(angle) * speed * (side === 0 ? 1 : -1) * (0.6 + Math.random() * 0.4),
+        vy: Math.sin(angle) * speed,
+        size: 5 + Math.random() * 6,
+        color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]!,
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.3,
+        circle: Math.random() > 0.5,
+      });
+    }
+  }
+
+  const start = performance.now();
+  const DURATION = 2200;
+  function frame(now: number) {
+    const t = now - start;
+    if (t > DURATION) { canvas.remove(); return; }
+    ctx!.clearRect(0, 0, canvas.width, canvas.height);
+    const fade = t > DURATION - 600 ? (DURATION - t) / 600 : 1;
+    for (const p of particles) {
+      p.vy += 0.25;
+      p.vx *= 0.99;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      ctx!.save();
+      ctx!.globalAlpha = fade;
+      ctx!.translate(p.x, p.y);
+      ctx!.rotate(p.rot);
+      ctx!.fillStyle = p.color;
+      if (p.circle) {
+        ctx!.beginPath();
+        ctx!.arc(0, 0, p.size / 2.5, 0, Math.PI * 2);
+        ctx!.fill();
+      } else {
+        ctx!.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+      }
+      ctx!.restore();
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
 
 /* ================= CHAT PANEL ================= */
 
@@ -73,12 +138,12 @@ function Chat({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <aside aria-label="folio assistant" className="flex h-full flex-col bg-panel">
+    <aside aria-label="Fin360+5 assistant" className="flex h-full flex-col bg-panel">
       <header className="flex items-center justify-between border-b px-5 py-4">
         <div className="flex items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground"><Sparkles className="size-4" aria-hidden /></span>
+          <span className="grid size-8 place-items-center rounded-lg bg-utd text-utd-foreground"><Sparkles className="size-4" aria-hidden /></span>
           <div>
-            <h2 className="font-semibold leading-tight">folio intelligence</h2>
+            <h2 className="font-semibold leading-tight">Fin360+5 intelligence</h2>
             <p className="text-sm text-muted-foreground">Plan what's next</p>
           </div>
         </div>
@@ -273,26 +338,49 @@ function AssetsTab() {
 }
 
 function LoansTab() {
+  const [paid, setPaid] = useState<Record<string, number>>({});
+  const [justPaid, setJustPaid] = useState<string | null>(null);
+
+  const pay = (name: string, amount: number) => {
+    celebrate();
+    setPaid((p) => ({ ...p, [name]: (p[name] ?? 0) + amount }));
+    setJustPaid(name);
+    window.setTimeout(() => setJustPaid((n) => (n === name ? null : n)), 4000);
+  };
+
   return (
     <Section title="What you owe" sub="Every loan, and when it's done">
       <div className="grid gap-4 md:grid-cols-2">
-        {loans.map((l) => (
-          <article key={l.name} className={card}>
-            <p className="text-sm text-muted-foreground">{l.type}</p>
-            <h4 className="font-semibold">{l.name}</h4>
-            <p className="my-3 font-display text-3xl">{usd(l.owed)} <span className="font-sans text-base text-muted-foreground">owed</span></p>
-            <dl className="mb-4 grid grid-cols-2 gap-3">
-              <Stat label="Borrowed" value={usd(l.principal)} />
-              <Stat label="Principal left" value={usd(l.remaining)} />
-              <Stat label="Interest rate" value={l.rate} />
-              <Stat label="Expected payoff" value={l.payoff} />
-            </dl>
-            <div role="progressbar" aria-valuenow={l.pctPaid} aria-valuemin={0} aria-valuemax={100} aria-label={`${l.name} paid off`} className="h-2.5 overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-primary" style={{ width: `${l.pctPaid}%` }} />
-            </div>
-            <p className="mt-1.5 text-sm text-muted-foreground">{l.pctPaid}% paid off</p>
-          </article>
-        ))}
+        {loans.map((l) => {
+          const owed = l.owed - (paid[l.name] ?? 0);
+          const pct = Math.min(100, Math.round(((l.principal - owed) / l.principal) * 100));
+          return (
+            <article key={l.name} className={card}>
+              <p className="text-sm text-muted-foreground">{l.type}</p>
+              <h4 className="font-semibold">{l.name}</h4>
+              <p className="my-3 font-display text-3xl">{usd(owed)} <span className="font-sans text-base text-muted-foreground">owed</span></p>
+              <dl className="mb-4 grid grid-cols-2 gap-3">
+                <Stat label="Borrowed" value={usd(l.principal)} />
+                <Stat label="Principal left" value={usd(l.remaining)} />
+                <Stat label="Interest rate" value={l.rate} />
+                <Stat label="Expected payoff" value={l.payoff} />
+              </dl>
+              <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${l.name} paid off`} className="h-2.5 overflow-hidden rounded-full bg-muted">
+                <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+              </div>
+              <p className="mt-1.5 text-sm text-muted-foreground">{pct}% paid off</p>
+              <button
+                onClick={() => pay(l.name, l.monthly)}
+                className="mt-4 min-h-11 w-full rounded-lg bg-primary font-semibold text-primary-foreground hover:opacity-90"
+              >
+                Pay {usd(l.monthly)} now
+              </button>
+              <p aria-live="polite" className="mt-2 text-sm font-semibold text-success">
+                {justPaid === l.name ? "Payment received on time — nice work! 🎉" : ""}
+              </p>
+            </article>
+          );
+        })}
       </div>
       <div className={`${card} flex gap-3 bg-secondary`}>
         <PartyPopper className="size-5 shrink-0 text-success" aria-hidden />
@@ -321,8 +409,8 @@ export default function Dashboard() {
       <header className="flex items-center justify-between border-b bg-card px-6 py-3">
         <div className="flex items-center gap-8">
           <span className="flex items-center gap-2 text-lg font-bold">
-            <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground"><Leaf className="size-4" aria-hidden /></span>
-            folio
+            <span className="grid size-8 place-items-center rounded-lg bg-utd text-utd-foreground"><Leaf className="size-4" aria-hidden /></span>
+            Fin360+5
           </span>
           <nav aria-label="Main" className="hidden gap-1 sm:flex">
             {["Overview", "Plans", "Activity"].map((n, i) => (
@@ -386,8 +474,8 @@ export default function Dashboard() {
         {chatOpen ? (
           <div className="hidden w-96 shrink-0 border-l md:block"><Chat onClose={() => setChatOpen(false)} /></div>
         ) : (
-          <button onClick={() => setChatOpen(true)} className="fixed bottom-6 right-6 flex min-h-12 items-center gap-2 rounded-full bg-primary px-5 font-semibold text-primary-foreground shadow-lg">
-            <MessageCircle className="size-5" aria-hidden /> Ask folio
+          <button onClick={() => setChatOpen(true)} className="fixed bottom-6 right-6 flex min-h-12 items-center gap-2 rounded-full bg-utd px-5 font-semibold text-utd-foreground shadow-lg">
+            <MessageCircle className="size-5" aria-hidden /> Ask Fin360+5
           </button>
         )}
       </div>
