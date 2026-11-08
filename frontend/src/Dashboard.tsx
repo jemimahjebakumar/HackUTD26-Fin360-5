@@ -50,6 +50,14 @@ const loans = [
   { name: "Auto loan", type: "Auto", principal: 25000, remaining: 6000, owed: 6150, rate: "4.9% fixed", payoff: "Jun 2027", pctPaid: 76, monthly: 325 },
 ];
 
+// Profile sent to the AI server (swap for real user data or a profile form).
+const profile: Profile = {
+  monthly_income: 6200,   // checking deposits this month
+  monthly_expenses: 4000, // checking withdrawals this month
+  savings: accounts.reduce((sum, a) => sum + a.balance, 0),
+  debt: loans.reduce((sum, l) => sum + l.owed, 0),
+};
+
 const usd = (n: number) =>
   (n < 0 ? "−" : "") + "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: n % 1 ? 2 : 0 });
 
@@ -122,19 +130,70 @@ function celebrate() {
 
 type Msg = { from: "me" | "ai"; text: string };
 
+// Mirrors server/projection.ts: this is the `context` the AI server expects.
+export type Profile = { monthly_income: number; monthly_expenses: number; savings: number; debt: number };
+export type Decision = { title: string; category: string; monthly_cost_change: number; one_time_cost: number; notes?: string };
+export type ChatContext = { profile: Profile | null; decisions: Decision[] };
+
+const API_URL = "/api/chat"; // dev: Vite proxies /api -> http://localhost:8787
 const starters = ["Can I afford a $35k car?", "How fast can I pay off my car loan?", "What should I cut back on?"];
 
-function Chat({ onClose }: { onClose: () => void }) {
+function Chat({ onClose, context, onSaveDecision }: { onClose: () => void; context: ChatContext; onSaveDecision: (d: Decision) => void }) {
   const [msgs, setMsgs] = useState<Msg[]>([
     { from: "ai", text: "Hi! Ask me about a big decision, like buying a car or a house, and I'll check it against your real numbers." },
   ]);
   const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const send = (text: string) => {
-    if (!text.trim()) return;
-    // TODO: hook up to the backend / Qwen endpoint
-    setMsgs((m) => [...m, { from: "me", text }, { from: "ai", text: "Thinking about that… (connect the AI backend here)" }]);
+  const appendToLast = (delta: string) =>
+    setMsgs((m) => m.map((x, i) => (i === m.length - 1 ? { ...x, text: x.text + delta } : x)));
+
+  const send = async (text: string) => {
+    if (!text.trim() || busy) return;
+    // Skip the greeting; the server adds its own system prompt.
+    const messages = [...msgs.slice(1), { from: "me" as const, text }].map((m) => ({
+      role: m.from === "me" ? "user" : "assistant",
+      content: m.text,
+    }));
+    setMsgs((m) => [...m, { from: "me", text }, { from: "ai", text: "" }]);
     setInput("");
+    setBusy(true);
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages, context }),
+      });
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+      // The server streams newline-delimited JSON events.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const handle = (line: string) => {
+        if (!line.trim()) return;
+        const ev = JSON.parse(line) as { type: string; delta?: string; decision?: Decision };
+        if (ev.type === "text" && ev.delta) appendToLast(ev.delta);
+        else if (ev.type === "save_decision" && ev.decision) {
+          onSaveDecision(ev.decision);
+          appendToLast(`\n\n✓ Saved “${ev.decision.title}” to your decisions.\n\n`);
+        }
+      };
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        lines.forEach(handle);
+      }
+      handle(buffer);
+    } catch {
+      appendToLast("Couldn't reach the assistant. Is the AI server running on port 8787?");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -152,31 +211,31 @@ function Chat({ onClose }: { onClose: () => void }) {
         </button>
       </header>
 
-      <ol aria-live="polite" className="flex-1 space-y-3 overflow-y-auto px-5 py-5">
+      <ol aria-live="polite" className="flex-1 space-y-3 overflow-y-auto whitespace-pre-wrap px-5 py-5">
         {msgs.map((m, i) => (
           <li key={i} className={m.from === "me" ? "ml-8 rounded-xl bg-primary p-3 text-primary-foreground" : "mr-4 rounded-xl border bg-card p-3"}>
             <span className="sr-only">{m.from === "me" ? "You:" : "Assistant:"}</span>
-            {m.text}
+            {m.text || "Thinking…"}
           </li>
         ))}
       </ol>
 
       <div className="space-y-2 px-5 pb-3">
         {starters.map((s) => (
-          <button key={s} onClick={() => send(s)} className="block w-full rounded-lg border bg-card px-3 py-2.5 text-left text-sm hover:bg-accent">
+          <button key={s} disabled={busy} onClick={() => void send(s)} className="block w-full rounded-lg border bg-card px-3 py-2.5 text-left text-sm hover:bg-accent disabled:opacity-50">
             {s}
           </button>
         ))}
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex gap-2 border-t p-4">
+      <form onSubmit={(e) => { e.preventDefault(); void send(input); }} className="flex gap-2 border-t p-4">
         <label htmlFor="chat-input" className="sr-only">Ask about your finances</label>
         <input
           id="chat-input" value={input} onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about your money…"
           className="min-h-11 flex-1 rounded-lg border border-input bg-card px-3 placeholder:text-muted-foreground"
         />
-        <button type="submit" aria-label="Send message" className="grid size-11 place-items-center rounded-lg bg-primary text-primary-foreground hover:opacity-90">
+        <button type="submit" disabled={busy} aria-label="Send message" className="grid size-11 place-items-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
           <Send className="size-4" aria-hidden />
         </button>
       </form>
@@ -402,6 +461,15 @@ const tabs = [
 export default function Dashboard() {
   const [tab, setTab] = useState("accounts");
   const [chatOpen, setChatOpen] = useState(true);
+  const [decisions, setDecisions] = useState<Decision[]>(() => {
+    try { return JSON.parse(localStorage.getItem("fin360-decisions") ?? "[]"); } catch { return []; }
+  });
+  const saveDecision = (d: Decision) =>
+    setDecisions((prev) => {
+      const next = [...prev, d];
+      try { localStorage.setItem("fin360-decisions", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
 
   return (
     <div className="flex h-dvh flex-col">
@@ -466,7 +534,7 @@ export default function Dashboard() {
         </main>
 
         {chatOpen ? (
-          <div className="hidden w-96 shrink-0 border-l md:block"><Chat onClose={() => setChatOpen(false)} /></div>
+          <div className="hidden w-96 shrink-0 border-l md:block"><Chat onClose={() => setChatOpen(false)} context={{ profile, decisions }} onSaveDecision={saveDecision} /></div>
         ) : (
           <button onClick={() => setChatOpen(true)} className="fixed bottom-6 right-6 flex min-h-12 items-center gap-2 rounded-full bg-utd px-5 font-semibold text-utd-foreground shadow-lg">
             <MessageCircle className="size-5" aria-hidden /> Ask Fin360+5
