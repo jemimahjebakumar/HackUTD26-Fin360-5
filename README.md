@@ -16,10 +16,9 @@ npm run dev
 
 frontend: port 3000
 mock-financial API: port 4000
-postgresql: port 5173
-backend:
+postgresql: port 5432
+backend: port 5173
 ollama:
-node:
 
 Then navigate to `localhost:3000` in your favorite web browser.
 
