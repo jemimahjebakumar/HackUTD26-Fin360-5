@@ -3,7 +3,16 @@ Fin360+5 is an AI-powered financial navigator that helps users understand their 
 
 ## Setup
 
-```zsh
+```bash
 npm run install:all
 npm run dev # (just runs frontend)
+```
+
+## File structure
+
+```bash
+.
+├── frontend
+├── backend
+└── mock-financial-api
 ```
